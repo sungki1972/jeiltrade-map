@@ -431,11 +431,15 @@ function heroSet(list,badge){
 function heroShow(){
   const it=heroList[heroIdx%heroList.length];heroIdx++;
   const img=document.createElement('img');img.src='images/'+it.f;
-  hero.insertBefore(img,hero.firstChild);heroImgs.push(img);
-  document.getElementById('heroCap').textContent=it.cap;
-  gsap.fromTo(img,{opacity:0,scale:1.02},{opacity:1,scale:1.13,duration:5.6,ease:'none',
-    onStart:()=>gsap.to(img,{opacity:1,duration:1.1})});
-  while(heroImgs.length>2){const old=heroImgs.shift();gsap.to(old,{opacity:0,duration:1,onComplete:()=>old.remove()})}
+  // 새 사진을 기존 사진 '위'(셰이드 바로 아래)에 올려 페이드인 → 캡션과 즉시 동기화
+  hero.insertBefore(img,hero.querySelector('.shade'));heroImgs.push(img);
+  const cap=document.getElementById('heroCap');
+  gsap.to(cap,{opacity:0,duration:.3,onComplete:()=>{
+    cap.textContent=it.cap;gsap.to(cap,{opacity:1,duration:.4});}});
+  gsap.fromTo(img,{opacity:0,scale:1.02},{opacity:1,duration:1.0,ease:'power1.out'});
+  gsap.to(img,{scale:1.13,duration:5.6,ease:'none'});
+  while(heroImgs.length>2){const old=heroImgs.shift();
+    gsap.to(old,{opacity:0,duration:1.0,onComplete:()=>old.remove()})}
 }
 hero.onclick=()=>{if(heroList.length)openGallery(heroList,(heroIdx-1+heroList.length)%heroList.length)};
 
@@ -672,13 +676,16 @@ document.addEventListener('keydown',e=>{
 });
 
 const apBtn=document.getElementById('autoplay');
-apBtn.onclick=()=>{
-  playing=!playing;apBtn.classList.toggle('playing',playing);
-  apBtn.textContent=playing?'⏸ 정지':'▶ 자동';
-  if(playing)playTimer=setInterval(()=>{if(cur<CH.length-1)go(cur+1);
-    else{playing=false;apBtn.classList.remove('playing');apBtn.textContent='▶ 자동';clearInterval(playTimer)}},15000);
-  else clearInterval(playTimer);
-};
+function setAutoplay(on){
+  playing=on;apBtn.classList.toggle('playing',on);
+  apBtn.textContent=on?'⏸ 정지':'▶ 자동';
+  clearInterval(playTimer);
+  if(on)playTimer=setInterval(()=>{if(cur<CH.length-1)go(cur+1);
+    else setAutoplay(false)},15000);
+}
+apBtn.onclick=()=>setAutoplay(!playing);
+/* 사용자가 수동 조작하면 자동재생 해제 */
+['prev','next'].forEach(id=>document.getElementById(id).addEventListener('click',()=>{if(playing)setAutoplay(false)}));
 
 /* ═══════════ 인트로 시네마틱 ═══════════ */
 (function introCinema(){
@@ -705,11 +712,19 @@ apBtn.onclick=()=>{
   fxStart('seeds');
 })();
 
-document.getElementById('startBtn').onclick=()=>{
+let started=false;
+function startShow(){
+  if(started)return;started=true;
   document.getElementById('intro').classList.add('hide');
   fxStop();
-  setTimeout(()=>go(0),400);
-};
+  setTimeout(()=>{go(0);setAutoplay(true)},400);
+}
+document.getElementById('startBtn').onclick=startShow;
+/* 입장 버튼은 1초 후 사라지고 자동 입장 + 자동재생 */
+setTimeout(()=>{
+  gsap.to('#startBtn',{opacity:0,scale:.92,duration:.35});
+  setTimeout(startShow,350);
+},1000);
 </script>
 </body>
 </html>
