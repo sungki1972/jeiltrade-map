@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>제일유통 — 나무로 잇다 · 대북 산림사업 20년</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🌲</text></svg>">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --green:#4ade80; --green-d:#16a34a; --amber:#fbbf24; --cyan:#22d3ee;
+  --red:#f87171; --bg:#0b1410; --panel:rgba(13,25,18,.9); --line:rgba(74,222,128,.25);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;font-family:'Malgun Gothic','Noto Sans KR',sans-serif;background:var(--bg)}
+#map{position:absolute;inset:0;background:#0b1410}
+.leaflet-container{background:#0b1410}
+#fx{position:absolute;inset:0;z-index:1500;pointer-events:none}
+
+/* ───── 인트로 ───── */
+#intro{position:absolute;inset:0;z-index:2600;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;overflow:hidden;
+  background:#050a07;transition:opacity 1.4s ease, visibility 1.4s}
+#intro.hide{opacity:0;visibility:hidden}
+#introBg{position:absolute;inset:0;opacity:.28}
+#introBg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
+#intro::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,rgba(5,14,9,.25) 0%,rgba(3,7,5,.95) 78%)}
+#intro>*{position:relative;z-index:2}
+#intro .eyebrow{color:var(--green);letter-spacing:.55em;font-size:13px;margin-bottom:20px}
+#intro h1{color:#f0fdf4;font-size:clamp(34px,5.4vw,66px);font-weight:800;line-height:1.3}
+#intro h1 em{font-style:normal;color:var(--green)}
+#intro h1 .w{display:inline-block;white-space:pre}
+#intro .sub{color:#a7b3ab;margin-top:22px;font-size:clamp(14px,1.6vw,18px);line-height:1.95}
+#intro button{margin-top:46px;padding:16px 56px;font-size:17px;font-weight:700;cursor:pointer;
+  color:#04150b;background:linear-gradient(135deg,#4ade80,#22c55e);border:none;border-radius:40px;
+  box-shadow:0 0 50px rgba(74,222,128,.4);transition:transform .25s}
+#intro button:hover{transform:scale(1.07)}
+
+/* ───── 스토리 패널 ───── */
+#panel{position:absolute;top:22px;right:22px;width:min(440px,calc(100vw - 44px));max-height:calc(100% - 150px);
+  z-index:1700;background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  backdrop-filter:blur(16px);box-shadow:0 18px 60px rgba(0,0,0,.55);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:transform .55s cubic-bezier(.2,.8,.2,1),opacity .55s}
+#panel.off{transform:translateX(46px);opacity:0;pointer-events:none}
+#hero{position:relative;height:158px;flex:0 0 auto;overflow:hidden;cursor:zoom-in;background:#08120c}
+#hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.05)}
+#hero .shade{position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(13,25,18,.95) 100%)}
+#hero .hcap{position:absolute;left:16px;bottom:8px;right:16px;color:#cfe8d8;font-size:11.5px;
+  text-shadow:0 1px 4px #000}
+#hero .hbadge{position:absolute;top:10px;right:12px;background:rgba(0,0,0,.55);color:#d1fae5;
+  font-size:11px;padding:4px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.18)}
+#panel .head{padding:16px 24px 12px}
+#panel .chap-no{color:var(--green);font-size:12px;letter-spacing:.35em;margin-bottom:6px}
+#panel h2{color:#f0fdf4;font-size:22px;line-height:1.4}
+#panel .body{padding:4px 24px 22px;overflow-y:auto;color:#cbd5d1;font-size:14.5px;line-height:1.85}
+#panel .body::-webkit-scrollbar{width:5px}
+#panel .body::-webkit-scrollbar-thumb{background:rgba(74,222,128,.3);border-radius:3px}
+#panel .body strong{color:#a7f3d0}
+#panel .body p+p{margin-top:10px}
+.quote{margin:14px 0;padding:12px 16px;border-left:3px solid var(--green);
+  background:rgba(74,222,128,.07);border-radius:0 10px 10px 0;color:#d1fae5;font-size:13.5px}
+.quote .src{display:block;margin-top:6px;color:#6b7280;font-size:11.5px}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 4px}
+.stat{flex:1 1 calc(50% - 5px);background:rgba(255,255,255,.04);border:1px solid rgba(74,222,128,.18);
+  border-radius:12px;padding:12px 14px;min-width:120px}
+.stat .v{color:var(--green);font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat .k{color:#9ca3af;font-size:11.5px;margin-top:3px}
+.gallery-btn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:9px 18px;
+  background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.35);color:#a7f3d0;
+  border-radius:24px;font-size:13px;cursor:pointer;transition:.25s}
+.gallery-btn:hover{background:rgba(74,222,128,.22)}
+
+/* ───── 내비 + 타임라인 ───── */
+#nav{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:1700;
+  display:flex;flex-direction:column;gap:10px;align-items:center}
+#tl{width:min(640px,72vw);height:34px;position:relative}
+#tl .track{position:absolute;left:0;right:0;top:16px;height:3px;background:rgba(255,255,255,.14);border-radius:2px}
+#tl .fill{position:absolute;left:0;top:16px;height:3px;background:linear-gradient(90deg,#16a34a,#4ade80);
+  border-radius:2px;width:0;box-shadow:0 0 12px rgba(74,222,128,.5)}
+#tl .yr{position:absolute;top:0;font-size:10px;color:#6b7280;transform:translateX(-50%)}
+#tl .knob{position:absolute;top:17.5px;width:15px;height:15px;border-radius:50%;background:#4ade80;
+  border:3px solid #0b1410;box-shadow:0 0 14px #4ade80;transform:translate(-50%,-50%);left:0}
+#tl .ev{position:absolute;top:14px;width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35);
+  transform:translateX(-50%);cursor:pointer}
+#tl .ev:hover::after{content:attr(data-t);position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  white-space:nowrap;background:#0d1912;color:#d1fae5;font-size:11px;padding:4px 10px;border-radius:8px;
+  border:1px solid var(--line)}
+#navRow{display:flex;align-items:center;gap:14px;background:var(--panel);border:1px solid var(--line);
+  border-radius:50px;padding:9px 18px;backdrop-filter:blur(14px);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#navRow button{background:none;border:1px solid rgba(74,222,128,.4);color:var(--green);width:36px;height:36px;
+  border-radius:50%;font-size:16px;cursor:pointer;transition:.25s}
+#navRow button:hover{background:rgba(74,222,128,.15)}
+#navRow button:disabled{opacity:.25;cursor:default}
+#dots{display:flex;gap:8px}
+#dots span{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.18);cursor:pointer;transition:.3s}
+#dots span.on{background:var(--green);box-shadow:0 0 10px var(--green);transform:scale(1.25)}
+#autoplay{font-size:12px !important;width:auto !important;padding:0 14px;border-radius:20px !important}
+#autoplay.playing{background:rgba(74,222,128,.2)}
+
+/* ───── 브랜드/연도/아카이브 버튼 ───── */
+#brand{position:absolute;top:22px;left:22px;z-index:1700;display:flex;gap:10px;align-items:stretch}
+#brand .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:11px 18px;backdrop-filter:blur(14px)}
+#brand .t{color:#f0fdf4;font-weight:800;font-size:16px}
+#brand .s{color:#9ca3af;font-size:11px;margin-top:2px}
+#archiveBtn{background:var(--panel);border:1px solid var(--line);border-radius:14px;color:#a7f3d0;
+  padding:0 18px;cursor:pointer;font-size:13px;backdrop-filter:blur(14px);transition:.25s}
+#archiveBtn:hover{background:rgba(74,222,128,.15)}
+#year{position:absolute;left:24px;bottom:26px;z-index:1600;color:rgba(74,222,128,.85);
+  font-size:clamp(40px,6vw,76px);font-weight:800;font-variant-numeric:tabular-nums;
+  text-shadow:0 0 30px rgba(74,222,128,.3);opacity:.9;pointer-events:none;line-height:1}
+#year .lbl{display:block;font-size:12px;letter-spacing:.3em;color:#9ca3af;font-weight:400}
+
+/* ───── 지도 마커 ───── */
+.mk{position:relative}
+.mk .dot{width:14px;height:14px;border-radius:50%;border:2.5px solid #fff;
+  box-shadow:0 0 12px rgba(0,0,0,.6);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.mk .ring{position:absolute;left:50%;top:50%;width:14px;height:14px;border-radius:50%;
+  transform:translate(-50%,-50%);animation:ripple 2.2s ease-out infinite}
+@keyframes ripple{0%{box-shadow:0 0 0 0 var(--rc)}100%{box-shadow:0 0 0 26px transparent}}
+.mk .lab{position:absolute;left:50%;top:-30px;transform:translateX(-50%);white-space:nowrap;
+  color:#f0fdf4;font-size:12px;font-weight:700;background:rgba(10,20,14,.85);
+  padding:3px 10px;border-radius:14px;border:1px solid rgba(255,255,255,.15)}
+.mk .lab small{color:#9ca3af;font-weight:400}
+.mk{animation:dropIn .7s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes dropIn{from{opacity:0;transform:translateY(-22px) scale(.6)}to{opacity:1;transform:none}}
+.mk.dim{filter:grayscale(.9) brightness(.65);animation:none}
+.gray-mode .mk .ring{animation:none}
+/* 포토 마커 */
+.pmk{position:relative;animation:dropIn .8s cubic-bezier(.2,1.4,.4,1) both;cursor:pointer}
+.pmk .ph{width:58px;height:58px;border-radius:50%;border:3px solid var(--green);overflow:hidden;
+  box-shadow:0 4px 18px rgba(0,0,0,.7),0 0 0 4px rgba(74,222,128,.18);
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);transition:transform .3s}
+.pmk:hover .ph{transform:translate(-50%,-50%) scale(1.14)}
+.pmk .ph img{width:100%;height:100%;object-fit:cover}
+.pmk .n{position:absolute;left:50%;top:50%;transform:translate(13px,-30px);background:var(--green);
+  color:#04150b;font-size:11px;font-weight:800;min-width:22px;height:22px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid #0b1410;z-index:5}
+.pmk .plab{position:absolute;left:50%;top:62px;transform:translateX(-50%);white-space:nowrap;
+  color:#d1fae5;font-size:11px;background:rgba(10,20,14,.85);padding:2px 9px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.12)}
+
+/* ───── 갤러리 라이트박스 ───── */
+#gal{position:absolute;inset:0;z-index:3200;background:rgba(2,6,4,.94);display:none;
+  flex-direction:column;align-items:center;justify-content:center}
+#gal.show{display:flex}
+#gal .stage{position:relative;width:88%;height:72%;display:flex;align-items:center;justify-content:center}
+#gal .stage img{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 20px 90px rgba(0,0,0,.85)}
+#gal .cap{color:#d1fae5;margin-top:14px;font-size:14.5px;max-width:80%;text-align:center}
+#gal .cnt{color:#6b7280;font-size:12px;margin-top:6px;letter-spacing:.2em}
+#gal .gbtn{position:absolute;top:50%;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;
+  background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.4);color:var(--green);
+  font-size:22px;cursor:pointer;transition:.25s;z-index:5}
+#gal .gbtn:hover{background:rgba(74,222,128,.28)}
+#galPrev{left:3%}#galNext{right:3%}
+#galClose{position:absolute;top:24px;right:30px;background:none;border:none;color:#9ca3af;
+  font-size:34px;cursor:pointer;z-index:5}
+#galThumbs{display:flex;gap:7px;margin-top:16px;max-width:86%;overflow-x:auto;padding:4px}
+#galThumbs img{height:48px;border-radius:6px;opacity:.45;cursor:pointer;transition:.25s;flex:0 0 auto}
+#galThumbs img.on{opacity:1;outline:2px solid var(--green)}
+#galThumbs::-webkit-scrollbar{height:5px}
+#galThumbs::-webkit-scrollbar-thumb{background:rgba(74,222,128,.3);border-radius:3px}
+
+/* ───── 아카이브 오버레이 ───── */
+#arch{position:absolute;inset:0;z-index:3000;background:rgba(4,9,6,.96);display:none;flex-direction:column}
+#arch.show{display:flex}
+#arch .ahead{display:flex;align-items:center;gap:18px;padding:24px 36px 14px;flex-wrap:wrap}
+#arch h3{color:#f0fdf4;font-size:22px}
+#arch .ftr{display:flex;gap:8px;flex-wrap:wrap}
+#arch .ftr button{background:rgba(255,255,255,.05);border:1px solid rgba(74,222,128,.25);color:#cbd5d1;
+  border-radius:18px;padding:6px 16px;font-size:12.5px;cursor:pointer;transition:.25s}
+#arch .ftr button.on{background:rgba(74,222,128,.2);color:#d1fae5;border-color:var(--green)}
+#arch .close{margin-left:auto;background:none;border:none;color:#9ca3af;font-size:30px;cursor:pointer}
+#archGrid{flex:1;overflow-y:auto;padding:10px 36px 36px;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;align-content:start}
+#archGrid .cell{position:relative;border-radius:10px;overflow:hidden;cursor:zoom-in;aspect-ratio:4/3;
+  border:1px solid rgba(255,255,255,.08);opacity:0;transform:translateY(16px)}
+#archGrid .cell img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+#archGrid .cell:hover img{transform:scale(1.08)}
+#archGrid .cell .c{position:absolute;left:0;right:0;bottom:0;padding:18px 9px 7px;font-size:10.5px;
+  color:#d1fae5;background:linear-gradient(transparent,rgba(0,0,0,.85))}
+#archGrid::-webkit-scrollbar{width:6px}
+#archGrid::-webkit-scrollbar-thumb{background:rgba(74,222,128,.3);border-radius:3px}
+
+#hint{position:absolute;right:28px;bottom:30px;z-index:1600;color:#6b7280;font-size:11.5px;text-align:right}
+.leaflet-control-attribution{background:rgba(10,20,14,.7)!important;color:#6b7280!important}
+.leaflet-control-attribution a{color:#9ca3af!important}
+@media (max-width:760px){
+  #panel{top:auto;bottom:120px;right:10px;left:10px;width:auto;max-height:46vh}
+  #hero{height:110px}
+  #year{bottom:auto;top:84px}
+  #tl{display:none}
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<canvas id="fx"></canvas>
+
+<div id="brand">
+  <div class="card"><div class="t">제일유통 JEIL TRADE</div><div class="s">대북 산림사업 1997–2018 · 발표용 지도</div></div>
+  <button id="archiveBtn">📷 사진 아카이브 <b id="archCount"></b></button>
+</div>
+<div id="year"><span class="lbl">YEAR</span><span id="yearNum">1997</span></div>
+
+<div id="panel" class="off">
+  <div id="hero"><div class="shade"></div><div class="hcap" id="heroCap"></div><div class="hbadge" id="heroBadge"></div></div>
+  <div class="head"><div class="chap-no" id="chapNo"></div><h2 id="chapTitle"></h2></div>
+  <div class="body" id="chapBody"></div>
+</div>
+
+<div id="nav">
+  <div id="tl"><div class="track"></div><div class="fill" id="tlFill"></div><div class="knob" id="tlKnob"></div></div>
+  <div id="navRow">
+    <button id="prev" title="이전 (←)">‹</button>
+    <div id="dots"></div>
+    <button id="next" title="다음 (→)">›</button>
+    <button id="autoplay" title="자동 재생">▶ 자동</button>
+  </div>
+</div>
+
+<div id="hint">← → 방향키 이동 · 지도 위 사진 마커 클릭 = 갤러리<br>패널 상단 사진 클릭 = 확대</div>
+
+<div id="intro">
+  <div id="introBg"></div>
+  <div class="eyebrow">JEIL TRADE · 1997 – 2018</div>
+  <h1 id="introTitle">사람 통일은 못하더라도<br><em>나무 통일</em>은 하고 싶었다</h1>
+  <div class="sub">경남 진주의 한 기업이 중국 훈춘에서 개성 개풍까지,<br>
+  묘목 1,400만 주로 이어 간 대북 산림협력 20년 — 사진 55장과 함께 따라갑니다</div>
+  <button id="startBtn">지도에서 시작하기 →</button>
+</div>
+
+<div id="gal">
+  <button id="galClose">✕</button>
+  <div class="stage"><button class="gbtn" id="galPrev">‹</button><img id="galImg" src="" alt=""><button class="gbtn" id="galNext">›</button></div>
+  <div class="cap" id="galCap"></div><div class="cnt" id="galCnt"></div>
+  <div id="galThumbs"></div>
+</div>
+
+<div id="arch">
+  <div class="ahead">
+    <h3>사진 아카이브</h3>
+    <div class="ftr" id="archFtr"></div>
+    <button class="close" id="archClose">✕</button>
+  </div>
+  <div id="archGrid"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="photos.js"></script>
+<script>
+/* ═══════════ 사진 헬퍼 ═══════════ */
+const byPrefix = p => PHOTOS.filter(x=>x.f.startsWith(p));
+const GP=byPrefix('gp_'), PY=byPrefix('py_'), CN=byPrefix('cn_'),
+      DOC=PHOTOS.filter(x=>x.f.startsWith('doc_')||x.f.startsWith('ct_'));
+document.getElementById('archCount').textContent = PHOTOS.length;
+
+/* ═══════════ 지도 ═══════════ */
+const map = L.map('map',{zoomControl:false,attributionControl:true,zoomSnap:.25})
+  .setView([38.6,127.2],7);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  maxZoom:18, attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
+const layer = L.layerGroup().addTo(map);
+let anims=[];
+function clearAnims(){anims.forEach(a=>{if(a.raf)cancelAnimationFrame(a.raf);if(a.iv)clearInterval(a.iv);if(a.to)clearTimeout(a.to)});anims=[]}
+function clearAll(){clearAnims();layer.clearLayers();document.body.classList.remove('gray-mode');fxStop()}
+
+const P = {
+  진주:[35.18,128.11], 서울:[37.566,126.978], 도라산:[37.897,126.71],
+  개성:[37.97,126.555], 개풍:[37.95,126.43],
+  평양:[39.03,125.755], 만경대:[39.01,125.66], 중화군:[38.85,125.80], 룡봉:[39.06,125.70],
+  봉산군:[38.52,126.20], 곡산:[38.80,126.66], 배천:[37.99,126.32],
+  원산:[39.15,127.44], 성천:[39.27,126.22],
+  무산:[42.22,129.22], 회령:[42.43,129.75], 남양:[42.93,129.84],
+  샛별:[42.81,130.22], 라선:[42.25,130.30], 신의주:[40.10,124.40],
+  훈춘:[42.86,130.36], 용정:[42.77,129.42], 연길:[42.90,129.50],
+  해림:[44.57,129.38], 단동:[40.12,124.39]
+};
+
+/* ═══════════ 마커 ═══════════ */
+const COLORS={green:'#4ade80',amber:'#fbbf24',cyan:'#22d3ee',red:'#f87171',white:'#e5e7eb'};
+function marker(pos,label,sub,color='green',delay=0,pulse=true){
+  const c=COLORS[color];
+  const html=`<div class="mk" style="animation-delay:${delay}ms">
+    ${pulse?`<div class="ring" style="--rc:${c}66"></div>`:''}
+    <div class="dot" style="background:${c}"></div>
+    <div class="lab">${label}${sub?` <small>${sub}</small>`:''}</div></div>`;
+  return L.marker(pos,{icon:L.divIcon({html,className:'',iconSize:[0,0]})}).addTo(layer);
+}
+/* 포토 마커: 썸네일 원형 + 장수 배지 → 클릭 시 갤러리 */
+function photoMarker(pos,list,label,delay=0){
+  if(!list.length)return;
+  const html=`<div class="pmk" style="animation-delay:${delay}ms">
+    <div class="ph"><img src="images/${list[0].f}" alt=""></div>
+    <div class="n">${list.length}</div>
+    <div class="plab">${label}</div></div>`;
+  const m=L.marker(pos,{icon:L.divIcon({html,className:'',iconSize:[58,58],iconAnchor:[29,29]}),zIndexOffset:800}).addTo(layer);
+  m.on('click',()=>openGallery(list,0));
+  return m;
+}
+
+/* ═══════════ 흐름선 ═══════════ */
+function bezier(a,b,curve=.25,n=60){
+  const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1];
+  const cx=mx-dy*curve,cy=my+dx*curve,pts=[];
+  for(let i=0;i<=n;i++){const t=i/n;
+    pts.push([(1-t)**2*a[0]+2*(1-t)*t*cx+t*t*b[0],(1-t)**2*a[1]+2*(1-t)*t*cy+t*t*b[1]]);}
+  return pts;
+}
+function flow(a,b,{color='#4ade80',curve=.25,draw=1400,weight=2.5,dotR=4,delay=0}={}){
+  const pts=bezier(a,b,curve);
+  const line=L.polyline([],{color,weight,opacity:.85,dashArray:'7 9'}).addTo(layer);
+  const glow=L.polyline([],{color,weight:weight*3.2,opacity:.12}).addTo(layer);
+  const t0={to:setTimeout(()=>{
+    const start=performance.now(); const h={};
+    h.raf=requestAnimationFrame(function step(now){
+      const k=Math.min((now-start)/draw,1);
+      const upto=pts.slice(0,Math.max(2,Math.floor(k*pts.length)));
+      line.setLatLngs(upto);glow.setLatLngs(upto);
+      if(k<1){h.raf=requestAnimationFrame(step)}
+      else{
+        let off=0;h.iv=setInterval(()=>{off=(off-1+32)%32;line.setStyle({dashOffset:String(off)})},60);
+        const dot=L.circleMarker(pts[0],{radius:dotR,color:'#fff',weight:1.5,fillColor:color,fillOpacity:1}).addTo(layer);
+        let i=0;const h2={iv:setInterval(()=>{i=(i+1)%pts.length;dot.setLatLng(pts[i])},45)};
+        anims.push(h2);
+      }
+    });
+    anims.push(h);
+  },delay)};
+  anims.push(t0);
+}
+
+/* ═══════════ 카운트업 / 연도 ═══════════ */
+function countUp(el,target,dur=1600,fmt=v=>v.toLocaleString('ko-KR')){
+  const o={v:0};
+  gsap.to(o,{v:target,duration:dur/1000,ease:'power3.out',
+    onUpdate:()=>{el.textContent=fmt(Math.round(o.v))}});
+}
+function setYear(y){
+  const el=document.getElementById('yearNum');
+  const o={v:parseInt(el.textContent)||y};
+  gsap.to(o,{v:y,duration:.9,ease:'power2.out',onUpdate:()=>{el.textContent=Math.round(o.v)}});
+}
+
+/* ═══════════ 파티클 (씨앗/눈) ═══════════ */
+const fx=document.getElementById('fx'), fctx=fx.getContext('2d');
+let fxMode=null,fxRaf=null,parts=[];
+function fxResize(){fx.width=innerWidth;fx.height=innerHeight}
+addEventListener('resize',fxResize);fxResize();
+function fxStart(mode){
+  fxMode=mode;parts=[];
+  const n=mode==='snow'?140:60;
+  for(let i=0;i<n;i++)parts.push({x:Math.random()*fx.width,y:Math.random()*fx.height,
+    r:mode==='snow'?1+Math.random()*2.4:1.2+Math.random()*2.2,
+    vy:mode==='snow'?.4+Math.random()*1.1:.15+Math.random()*.45,
+    vx:(Math.random()-.5)*.5, ph:Math.random()*Math.PI*2});
+  if(!fxRaf)fxLoop();
+}
+function fxStop(){fxMode=null;parts=[];if(fxRaf){cancelAnimationFrame(fxRaf);fxRaf=null}
+  fctx.clearRect(0,0,fx.width,fx.height)}
+function fxLoop(){
+  fxRaf=requestAnimationFrame(fxLoop);
+  fctx.clearRect(0,0,fx.width,fx.height);
+  if(!fxMode)return;
+  const col=fxMode==='snow'?'rgba(226,232,240,.75)':'rgba(74,222,128,.55)';
+  parts.forEach(p=>{
+    p.ph+=.012;p.y+=p.vy;p.x+=p.vx+Math.sin(p.ph)*.4;
+    if(p.y>fx.height+8){p.y=-8;p.x=Math.random()*fx.width}
+    if(p.x<-8)p.x=fx.width+8; if(p.x>fx.width+8)p.x=-8;
+    fctx.beginPath();fctx.arc(p.x,p.y,p.r,0,7);fctx.fillStyle=col;fctx.fill();
+  });
+}
+
+/* ═══════════ 갤러리 ═══════════ */
+let gList=[],gIdx=0;
+const gal=document.getElementById('gal');
+function openGallery(list,idx=0){
+  gList=list;gIdx=idx;gal.classList.add('show');renderGal(true);
+}
+function renderGal(first=false){
+  const it=gList[gIdx],img=document.getElementById('galImg');
+  img.src='images/'+it.f;
+  document.getElementById('galCap').textContent=it.cap;
+  document.getElementById('galCnt').textContent=`${gIdx+1}  /  ${gList.length}  ·  ${it.g}${it.y?' · '+it.y:''}`;
+  gsap.fromTo(img,{opacity:0,scale:.94},{opacity:1,scale:1,duration:.45,ease:'power2.out'});
+  const th=document.getElementById('galThumbs');
+  if(first){th.innerHTML=gList.map((x,i)=>`<img src="images/${x.f}" data-i="${i}">`).join('');
+    th.querySelectorAll('img').forEach(t=>t.onclick=e=>{e.stopPropagation();gIdx=+t.dataset.i;renderGal()});}
+  th.querySelectorAll('img').forEach((t,i)=>t.classList.toggle('on',i===gIdx));
+  const on=th.querySelector('img.on');if(on)on.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+}
+document.getElementById('galPrev').onclick=e=>{e.stopPropagation();gIdx=(gIdx-1+gList.length)%gList.length;renderGal()};
+document.getElementById('galNext').onclick=e=>{e.stopPropagation();gIdx=(gIdx+1)%gList.length;renderGal()};
+document.getElementById('galClose').onclick=()=>gal.classList.remove('show');
+gal.onclick=e=>{if(e.target===gal||e.target.classList.contains('stage'))gal.classList.remove('show')};
+
+/* ═══════════ 아카이브 ═══════════ */
+const arch=document.getElementById('arch'),grid=document.getElementById('archGrid');
+const GROUPS=['전체',...new Set(PHOTOS.map(p=>p.g))];
+let archG='전체';
+const ftr=document.getElementById('archFtr');
+GROUPS.forEach(g=>{const b=document.createElement('button');b.textContent=g;
+  b.onclick=()=>{archG=g;renderArch()};ftr.appendChild(b)});
+function renderArch(){
+  ftr.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.textContent===archG));
+  const list=archG==='전체'?PHOTOS:PHOTOS.filter(p=>p.g===archG);
+  grid.innerHTML=list.map((p,i)=>`<div class="cell" data-i="${i}">
+    <img src="images/${p.f}" loading="lazy"><div class="c">${p.cap.slice(0,42)}</div></div>`).join('');
+  grid.querySelectorAll('.cell').forEach(c=>c.onclick=()=>openGallery(list,+c.dataset.i));
+  gsap.to('#archGrid .cell',{opacity:1,y:0,duration:.5,stagger:.018,ease:'power2.out'});
+}
+document.getElementById('archiveBtn').onclick=()=>{arch.classList.add('show');renderArch()};
+document.getElementById('archClose').onclick=()=>arch.classList.remove('show');
+
+/* ═══════════ 켄번즈 히어로 ═══════════ */
+const hero=document.getElementById('hero');
+let heroList=[],heroIdx=0,heroTimer=null,heroImgs=[];
+function heroSet(list,badge){
+  heroList=list;heroIdx=0;
+  heroImgs.forEach(i=>i.remove());heroImgs=[];
+  clearInterval(heroTimer);
+  document.getElementById('heroBadge').textContent=badge||'';
+  if(!list.length){hero.style.display='none';return}
+  hero.style.display='block';
+  heroShow();
+  if(list.length>1)heroTimer=setInterval(heroShow,5200);
+}
+function heroShow(){
+  const it=heroList[heroIdx%heroList.length];heroIdx++;
+  const img=document.createElement('img');img.src='images/'+it.f;
+  hero.insertBefore(img,hero.firstChild);heroImgs.push(img);
+  document.getElementById('heroCap').textContent=it.cap;
+  gsap.fromTo(img,{opacity:0,scale:1.02},{opacity:1,scale:1.13,duration:5.6,ease:'none',
+    onStart:()=>gsap.to(img,{opacity:1,duration:1.1})});
+  while(heroImgs.length>2){const old=heroImgs.shift();gsap.to(old,{opacity:0,duration:1,onComplete:()=>old.remove()})}
+}
+hero.onclick=()=>{if(heroList.length)openGallery(heroList,(heroIdx-1+heroList.length)%heroList.length)};
+
+/* ═══════════ 패널 헬퍼 ═══════════ */
+const stat=(v,k,id='')=>`<div class="stat"><div class="v" ${id?`id="${id}"`:''}>${v}</div><div class="k">${k}</div></div>`;
+const quote=(q,s)=>`<div class="quote">“${q}”<span class="src">— ${s}</span></div>`;
+const gbtn=(label,key)=>`<button class="gallery-btn" data-g="${key}">📷 ${label}</button>`;
+const GSETS={gp:GP,py:PY,cn:CN,doc:DOC,all:PHOTOS};
+
+/* ═══════════ 챕터 ═══════════ */
+const CH=[
+{ no:'PROLOGUE', title:'경남 진주에서 시작된 이야기', year:1997,
+  view:{c:[36.4,127.6],z:6.5},
+  hero:[DOC.find(p=>p.f.includes('협력사업자승인증')),GP[0],CN[1]].filter(Boolean), badge:'1997 진주',
+  body:`<p><strong>제일유통</strong>(구 제일전기, 1972 창립)은 경남 진주의 가족기업이다.
+  황해도 옹진 출신 실향민 <strong>성재경 회장</strong>은 1996년 북한 수해의 원인을
+  '산림 황폐화'로 진단하고, 부친의 유지를 받들어 북녘 나무심기를 평생 사업으로 정했다.</p>
+  <div class="stats">${stat('1972','제일전기 창립 (진주)')}${stat('2003.9','제일유통 설립')}
+  ${stat('30년','통일부 승인 사업기간')}${stat('20년','실제 사업 기록 (1997–2018)')}</div>
+  ${quote('아버지의 인생을 걸고 하는 이 사업, 부디 믿어주시기 바랍니다','2005.10 단동 민경련 앞 팩스')}`,
+  setup(){ marker(P.진주,'진주 본사','제일유통','green',200);
+           marker(P.서울,'통일부','승인·보고 채널','white',700,false); }
+},
+{ no:'CHAPTER 1', title:'중국에 묘목 기지를 만들다', year:1997,
+  view:{c:[43.1,129.6],z:7.2},
+  hero:CN, badge:'중국 동북 3성',
+  body:`<p>북한과 기후가 같고 국경을 맞댄 <strong>중국 동북지방</strong>이 답이었다.
+  1997년 훈춘에 1,000ha 토지사용권을 확보하고 이깔나무(낙엽송) 위주의
+  대량 양묘를 시작했다. 토지·인력이 싸고, 묘목 생존율이 높고, 운송이 쉽다 —
+  '제3국 경유 모델'의 3대 이점이다.</p>
+  <div class="stats">${stat('6곳','훈춘 일대 묘목장')}${stat('1,000ha','훈춘 확보 토지(30~50년)')}
+  ${stat('150만 주','해림 위탁 이깔나무')}${stat('300ha','용정 도토리나무(표고용)')}</div>
+  ${gbtn('중국 현장 사진 보기','cn')}`,
+  setup(){ marker(P.훈춘,'훈춘','묘목장 6곳 · 1,000ha','amber',200);
+           marker(P.용정,'용정 동성촌','도토리나무 300ha','amber',500);
+           marker(P.해림,'해림 (흑룡강)','이깔 150만 주 위탁','amber',800);
+           marker(P.연길,'연길','민경련 채널','white',1100,false);
+           photoMarker(P.훈춘,CN.filter(p=>p.f.includes('훈춘')),'훈춘 1997~',1500);
+           photoMarker(P.단동,CN.filter(p=>p.f.includes('단동')),'단동',1900); }
+},
+{ no:'CHAPTER 2', title:'1,400만 주, 국경을 넘다', year:1999,
+  view:{c:[41.9,128.6],z:6.4},
+  hero:[CN[2],CN[1],CN[0]].filter(Boolean), badge:'국경 교두 1999–2010',
+  body:`<p>1999년 4월 첫 북송을 시작으로 2010년까지 <strong>국경 교두(다리)</strong>를 통해
+  묘목이 북으로 들어갔다. 훈춘→회령·남양·샛별, 해림→삼합→회령, 단동→신의주.
+  2009년 한 해에만 이깔나무 200만 주가 화물차(吉H42222 외)로 넘어갔다.</p>
+  <div class="stats">${stat('0','누적 투입 묘목 (주)','cnt1')}${stat('12회','투입 차수 (1999–2010)')}
+  ${stat('10%','해상 컨테이너 생존율')}${stat('100%','육로 가식 이식 생존율')}</div>
+  ${quote('우리나라에서 도문해관을 건너 북한으로 들어가는 최초의 협력사업자','2006 남양 방북계획서')}`,
+  setup(){
+    marker(P.훈춘,'훈춘','출발 기지','amber',100);
+    marker(P.해림,'해림','위탁 기지','amber',100);
+    marker(P.단동,'단동','출발 기지','amber',100);
+    marker(P.회령,'회령 교두','','green',900);
+    marker(P.남양,'남양 교두','','green',1200);
+    marker(P.샛별,'샛별(경원)','','green',1500);
+    marker(P.신의주,'신의주','','green',1800);
+    flow(P.훈춘,P.회령,{curve:.18,delay:600});
+    flow(P.훈춘,P.남양,{curve:-.2,delay:900});
+    flow(P.훈춘,P.샛별,{curve:.3,delay:1200});
+    flow(P.해림,P.회령,{curve:.15,delay:1500,color:'#a3e635'});
+    flow(P.단동,P.신의주,{curve:.3,delay:1800});
+    anims.push({to:setTimeout(()=>{const el=document.getElementById('cnt1');
+      if(el)countUp(el,14192000,2400);},800)});
+  }
+},
+{ no:'CHAPTER 3', title:'개성 개풍양묘장 — 현지에 뿌리내리다', year:2006,
+  view:{c:[37.93,126.55],z:10.3},
+  hero:GP.filter(p=>p.y&&p.y<=2007), badge:'개풍 12ha · 2006~',
+  body:`<p>운송보다 강한 답은 <strong>현지 생산</strong>이었다. 2005.12.30 통일부 승인
+  (제2005-45호)과 북측 MGS-12 합의서(1억 주·30년·이익 20:80)를 양손에 들고,
+  2006년 4월 14일 개성 개풍군 <strong>12ha 양묘장</strong>에 백합나무 2만 주를 심었다.
+  서울에서 도라산 CIQ를 지나 차로 닿는 유일한 북한 양묘장이었다.</p>
+  <div class="stats">${stat('12ha','개풍양묘장 (죽백천 인공지)')}${stat('246만 주','이식 묘목 누계')}
+  ${stat('2,100m','울타리 ($100,000)')}${stat('27회+','개성 방문 (월 1회꼴)')}</div>
+  ${gbtn('개풍양묘장 사진 25장 보기','gp')}`,
+  setup(){
+    marker(P.개성,'개성공업지구','경협 협의사무소','white',700,false);
+    marker(P.도라산,'도라산 CIQ','육로 관문','cyan',1000);
+    flow(P.도라산,P.개풍,{curve:.12,draw:1800,delay:500,color:'#22d3ee'});
+    photoMarker(P.개풍,GP,'개풍양묘장 2005–2010',400);
+  }
+},
+{ no:'CHAPTER 4', title:'북한 전역 11곳으로 — 종자 32톤', year:2007,
+  view:{c:[39.6,126.9],z:6.8},
+  hero:PY, badge:'평양 일대',
+  body:`<p>개풍을 거점으로 묘목장은 <strong>북한 전역 11곳</strong>으로 퍼졌다.
+  평양 만경대 과수 45ha, 중앙양묘장 느티 종자 400kg, 중화군 소목장 800정보,
+  원산 은행·호두, 성천 약밤, 배천 잣… 파종한 종자만 <strong>32톤</strong>이다.</p>
+  <div class="stats">${stat('11곳','북한 내 묘목장')}${stat('32톤','파종 종자 누계')}
+  ${stat('52,000주','2010.4 평양 과수 식수')}${stat('800정보','중화군 소목장')}</div>
+  ${gbtn('평양 현장 사진 보기','py')}`,
+  setup(){
+    const sites=[[P.개풍,'개풍','백합 2.3만+종자',300],[P.만경대,'만경대','과수 6.2만 주',550],
+      [P.룡봉,'룡봉','밤나무 50정보',800],[P.중화군,'중화군','소목장',1050],
+      [P.봉산군,'봉산 천덕리','느티 종자',1300],[P.곡산,'곡산','돌배',1550],
+      [P.배천,'배천','잣 10톤',1800],[P.원산,'원산','은행·호두·살구',2050],
+      [P.성천,'성천','약밤 1톤',2300],[P.무산,'무산','낙엽송 1,000ha 합의',2550],
+      [P.라선,'라선','구상 60:40',2800]];
+    sites.forEach(([p,n,s,d])=>marker(p,n,s,'green',d));
+    flow(P.개풍,P.평양,{curve:.2,delay:600,weight:1.8,dotR:3});
+    flow(P.개풍,P.원산,{curve:-.25,delay:1100,weight:1.8,dotR:3});
+    photoMarker([39.25,125.45],PY,'평양 현장',1600);
+  }
+},
+{ no:'CHAPTER 5', title:'서류로 증명되는 사업', year:2007,
+  view:{c:[38.3,126.9],z:7.4},
+  hero:DOC, badge:'원본 문서',
+  body:`<p>이 사업의 모든 고리는 문서로 남았다. <strong>승인 → 계약 → 이행 → 확인 → 보고</strong>.
+  통일부 승인증, 북측과의 계약서 31건, 그리고 북측이 발급한 이행 확인서들 —
+  2007년 2월 개선총회사 김태길 사장은 <strong>'묘목 1,000만 주 투자'를 실명 서명으로 확인</strong>했다.</p>
+  <div class="stats">${stat('31건','보존 계약·합의 문서')}${stat('50매','원본 스캔 (판독 100%)')}
+  ${stat('$912,282','나무재배 투자 실측')}${stat('40여 회','방북 결과보고서')}</div>
+  ${gbtn('계약서·증빙 원본 보기','doc')}`,
+  setup(){
+    marker(P.서울,'통일부','승인·분기보고','white',200,false);
+    marker(P.평양,'평양','개선총회사 본사','cyan',1000);
+    flow(P.서울,P.개성,{curve:.1,color:'#e5e7eb',weight:1.6,delay:400,dotR:3});
+    flow(P.개성,P.평양,{curve:.15,color:'#22d3ee',weight:1.6,delay:900,dotR:3});
+    photoMarker(P.개성,DOC,'계약·증빙 원본',600);
+    photoMarker(P.단동,CN.filter(p=>p.f.includes('단동')),'단동 팩스 채널',1300);
+  }
+},
+{ no:'CHAPTER 6', title:'2010 — 5.24, 멈춰 선 숲', year:2010,
+  view:{c:[38.9,127.0],z:6.8},
+  hero:GP.filter(p=>p.y&&p.y>=2008), badge:'2008–2011 겨울',
+  body:`<p>천안함 사건 후 <strong>5.24 조치</strong>로 방북길이 끊겼다. 농약과 비료가 끊긴
+  양묘장은 병충해에 잠식됐다 — 2011년 마지막 방문 기록: 소나무 생존 40%,
+  묘목 50~60% 손실. 북측은 묘목장을 '국가 귀속' 처리했다.</p>
+  <div class="stats">${stat('2010.4.29','마지막 정기 방북')}${stat('50~60%','병충해 손실 (2011)')}
+  ${stat('$0','투자 회수액')}${stat('80명','북측이 청구한 인건비')}</div>
+  ${quote('차라리 이 사업을 시작하지 않았으면 좋았을 것을, 이라는 생각도 들 때가 있습니다','2006 협력사업보고서 건의문 — 그 말은 2010년 현실이 됐다')}`,
+  setup(){
+    document.body.classList.add('gray-mode');
+    fxStart('snow');
+    [[P.개풍,'개풍양묘장','국가 귀속'],[P.만경대,'만경대',''],[P.중화군,'중화군',''],
+     [P.원산,'원산',''],[P.봉산군,'봉산',''],[P.무산,'무산','']].forEach(([p,n,s],i)=>{
+      const m=marker(p,n,s,'red',i*220,false);
+      anims.push({to:setTimeout(()=>{const el=m.getElement();
+        el&&el.querySelector('.mk')?.classList.add('dim')},1400+i*220)});
+    });
+    const dmz=[[37.78,124.7],[37.95,126.65],[38.32,127.4],[38.61,128.36]];
+    const line=L.polyline(dmz,{color:'#f87171',weight:3,dashArray:'12 10',opacity:.9}).addTo(layer);
+    let off=0;anims.push({iv:setInterval(()=>{off=(off+1)%44;line.setStyle({dashOffset:String(off)})},80)});
+    L.marker([37.9,125.6],{icon:L.divIcon({className:'',iconSize:[0,0],
+      html:'<div style="color:#f87171;font-weight:800;font-size:13px;white-space:nowrap;text-shadow:0 0 8px #000">✕ 5.24 조치 — 통행·반출 중단</div>'})}).addTo(layer);
+    photoMarker(P.개풍,GP.filter(p=>p.y&&p.y>=2008),'마지막 기록 2008–2010',1800);
+  }
+},
+{ no:'EPILOGUE', title:'2018 단동 — 그리고 남은 것', year:2018,
+  view:{c:[40.6,126.4],z:6.2},
+  hero:[GP[1],PY[2],CN[2],DOC[1]].filter(Boolean), badge:'기록은 남는다',
+  body:`<p>2018년 5월, 8년 만의 대면. 중국 단동 압록강호텔에서 민경련 대표는
+  본국 확인을 거쳐 답했다 — <strong>"경협 재개 시 모든 경영권은 다시 제일유통으로
+  귀속에 문제가 없다."</strong></p>
+  <p>회수는 0원이었지만, 남은 것은 장부 밖에 있다: 검증된 행정 절차,
+  계약 노하우, 북측의 신뢰, 그리고 930건의 문서와 이 사진들.</p>
+  <div class="stats">${stat('0','투입 묘목 누계 (주)','cnt2')}${stat('0','파종 종자 (kg)','cnt3')}
+  ${stat('0','북한 내 묘목장 (곳)','cnt4')}${stat('0','보존 문서 (건)','cnt5')}</div>
+  ${quote('우리는 돈벌이를 생각하고 하지 않았다. 사람 통일은 못하더라도 나무 통일은 하고 싶었다','성재경, 2018 산림협력 간담회')}
+  ${gbtn('아카이브 전체 55장 보기','all')}`,
+  setup(){
+    fxStart('seeds');
+    marker(P.단동,'단동 압록강호텔','2018.5.8 대면 접촉','cyan',300);
+    marker(P.진주,'진주','다시, 기다림','green',800);
+    flow(P.진주,P.단동,{curve:.22,delay:600,color:'#22d3ee',draw:2000});
+    photoMarker(P.개풍,GP,'개풍의 기록 25장',1400);
+    photoMarker([39.25,125.45],PY,'평양의 기록',1800);
+    photoMarker(P.훈춘,CN.filter(p=>p.f.includes('훈춘')),'훈춘의 기록',2200);
+    anims.push({to:setTimeout(()=>{
+      const f=(id,v)=>{const el=document.getElementById(id);if(el)countUp(el,v,2000)};
+      f('cnt2',14192000);f('cnt3',32000);f('cnt4',11);f('cnt5',932);
+    },700)});
+  }
+}
+];
+
+/* ═══════════ 타임라인 ═══════════ */
+const TL0=1996,TL1=2019;
+const tl=document.getElementById('tl');
+[1997,2000,2005,2010,2015,2018].forEach(y=>{
+  const d=document.createElement('div');d.className='yr';
+  d.style.left=((y-TL0)/(TL1-TL0)*100)+'%';d.textContent=y;tl.appendChild(d);});
+[[1997,'훈춘 기지'],[1999,'첫 북송'],[2005,'통일부 승인'],[2006,'개풍 식수'],
+ [2007,'1000만주 확인'],[2010,'5.24'],[2016,'보상신청'],[2018,'단동 접촉']].forEach(([y,t])=>{
+  const e=document.createElement('div');e.className='ev';e.dataset.t=`${y} ${t}`;
+  e.style.left=((y-TL0)/(TL1-TL0)*100)+'%';tl.appendChild(e);});
+function tlGo(y){
+  const k=(y-TL0)/(TL1-TL0)*100;
+  gsap.to('#tlKnob',{left:k+'%',duration:1.1,ease:'power2.inOut'});
+  gsap.to('#tlFill',{width:k+'%',duration:1.1,ease:'power2.inOut'});
+}
+
+/* ═══════════ 내비게이션 ═══════════ */
+let cur=-1,playing=false,playTimer=null;
+const dotsEl=document.getElementById('dots');
+CH.forEach((c,i)=>{const d=document.createElement('span');d.onclick=()=>go(i);dotsEl.appendChild(d)});
+
+function go(i){
+  if(i<0||i>=CH.length||i===cur)return;
+  cur=i;const c=CH[i];
+  clearAll();
+  document.querySelectorAll('#dots span').forEach((d,k)=>d.classList.toggle('on',k===i));
+  document.getElementById('prev').disabled=(i===0);
+  document.getElementById('next').disabled=(i===CH.length-1);
+  const panel=document.getElementById('panel');
+  panel.classList.add('off');
+  anims.push({to:setTimeout(()=>{
+    document.getElementById('chapNo').textContent=c.no+`  ·  ${i+1} / ${CH.length}`;
+    document.getElementById('chapTitle').textContent=c.title;
+    document.getElementById('chapBody').innerHTML=c.body;
+    heroSet(c.hero||[],c.badge);
+    panel.classList.remove('off');
+    gsap.from('#chapBody > *',{opacity:0,y:14,duration:.55,stagger:.08,ease:'power2.out',delay:.15});
+    document.querySelectorAll('.gallery-btn').forEach(b=>
+      b.onclick=()=>openGallery(GSETS[b.dataset.g]||PHOTOS,0));
+  },380)});
+  setYear(c.year);tlGo(c.year);
+  map.flyTo(c.view.c,c.view.z,{duration:2.1,easeLinearity:.18});
+  anims.push({to:setTimeout(()=>c.setup&&c.setup.call(c),600)});
+}
+document.getElementById('prev').onclick=()=>go(cur-1);
+document.getElementById('next').onclick=()=>go(cur+1);
+document.addEventListener('keydown',e=>{
+  if(gal.classList.contains('show')){
+    if(e.key==='ArrowRight'){gIdx=(gIdx+1)%gList.length;renderGal()}
+    if(e.key==='ArrowLeft'){gIdx=(gIdx-1+gList.length)%gList.length;renderGal()}
+    if(e.key==='Escape')gal.classList.remove('show');
+    return;
+  }
+  if(arch.classList.contains('show')){if(e.key==='Escape')arch.classList.remove('show');return}
+  if(e.key==='ArrowRight'||e.key==='PageDown'){e.preventDefault();go(cur+1)}
+  if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(cur-1)}
+});
+
+const apBtn=document.getElementById('autoplay');
+apBtn.onclick=()=>{
+  playing=!playing;apBtn.classList.toggle('playing',playing);
+  apBtn.textContent=playing?'⏸ 정지':'▶ 자동';
+  if(playing)playTimer=setInterval(()=>{if(cur<CH.length-1)go(cur+1);
+    else{playing=false;apBtn.classList.remove('playing');apBtn.textContent='▶ 자동';clearInterval(playTimer)}},15000);
+  else clearInterval(playTimer);
+};
+
+/* ═══════════ 인트로 시네마틱 ═══════════ */
+(function introCinema(){
+  const bg=document.getElementById('introBg');
+  const picks=[GP[1],CN[1],PY[2],GP[15]||GP[3]].filter(Boolean);
+  picks.forEach(p=>{const im=document.createElement('img');im.src='images/'+p.f;bg.appendChild(im)});
+  const imgs=bg.querySelectorAll('img');let bi=0;
+  function cyc(){
+    imgs.forEach((im,k)=>gsap.to(im,{opacity:k===bi%imgs.length?1:0,duration:2}));
+    gsap.fromTo(imgs[bi%imgs.length],{scale:1.0},{scale:1.12,duration:7,ease:'none'});
+    bi++;
+  }
+  cyc();setInterval(cyc,6000);
+  // 제목 단어 스태거
+  const h1=document.getElementById('introTitle');
+  h1.innerHTML=h1.innerHTML.split(/(<br>|<em>.*?<\/em>)/g).map(seg=>{
+    if(seg.startsWith('<'))return seg;
+    return seg.split(' ').filter(Boolean).map(w=>`<span class="w">${w} </span>`).join('');
+  }).join('');
+  gsap.from('#intro .eyebrow',{opacity:0,y:18,duration:1,delay:.3});
+  gsap.from('#introTitle .w, #introTitle em',{opacity:0,y:26,duration:.8,stagger:.1,delay:.7,ease:'power3.out'});
+  gsap.from('#intro .sub',{opacity:0,y:18,duration:1,delay:1.9});
+  gsap.from('#intro button',{opacity:0,y:18,scale:.9,duration:.9,delay:2.4,ease:'back.out(1.6)'});
+  fxStart('seeds');
+})();
+
+document.getElementById('startBtn').onclick=()=>{
+  document.getElementById('intro').classList.add('hide');
+  fxStop();
+  setTimeout(()=>go(0),400);
+};
+</script>
+</body>
+</html>
