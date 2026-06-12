@@ -252,10 +252,10 @@ html,body{height:100%;overflow:hidden;font-family:'Malgun Gothic','Noto Sans KR'
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="photos.js"></script>
 <script>
-/* ═══════════ 사진 헬퍼 ═══════════ */
-const byPrefix = p => PHOTOS.filter(x=>x.f.startsWith(p));
-const GP=byPrefix('gp_'), PY=byPrefix('py_'), CN=byPrefix('cn_'),
-      DOC=PHOTOS.filter(x=>x.f.startsWith('doc_')||x.f.startsWith('ct_'));
+/* ═══════════ 사진 헬퍼 (photos.js의 그룹 필드 기준) ═══════════ */
+const byGroup = g => PHOTOS.filter(x=>x.g===g);
+const GP=byGroup('개성 개풍양묘장'), PY=byGroup('평양'), CN=byGroup('중국 기지'),
+      DOC=PHOTOS.filter(x=>x.g==='증빙 문서'||x.g==='계약서 원본');
 document.getElementById('archCount').textContent = PHOTOS.length;
 
 /* ═══════════ 지도 ═══════════ */
