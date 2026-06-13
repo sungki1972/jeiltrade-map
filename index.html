@@ -113,17 +113,19 @@ html,body{height:100%;overflow:hidden;font-family:'Malgun Gothic','Noto Sans KR'
   text-shadow:0 0 30px rgba(74,222,128,.3);opacity:.9;pointer-events:none;line-height:1}
 #year .lbl{display:block;font-size:12px;letter-spacing:.3em;color:#9ca3af;font-weight:400}
 
-/* ───── 지도 마커 ───── */
+/* ───── 지도 마커 (반투명 라벨 — 겹쳐도 뒤가 비침) ───── */
+.leaflet-tile-pane{filter:brightness(1.45) contrast(1.12) saturate(1.3)}
 .mk{position:relative}
-.mk .dot{width:14px;height:14px;border-radius:50%;border:2.5px solid #fff;
+.mk .dot{width:18px;height:18px;border-radius:50%;border:2.5px solid #fff;
   box-shadow:0 0 12px rgba(0,0,0,.6);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
-.mk .ring{position:absolute;left:50%;top:50%;width:14px;height:14px;border-radius:50%;
+.mk .ring{position:absolute;left:50%;top:50%;width:18px;height:18px;border-radius:50%;
   transform:translate(-50%,-50%);animation:ripple 2.2s ease-out infinite}
 @keyframes ripple{0%{box-shadow:0 0 0 0 var(--rc)}100%{box-shadow:0 0 0 26px transparent}}
-.mk .lab{position:absolute;left:50%;top:-30px;transform:translateX(-50%);white-space:nowrap;
-  color:#f0fdf4;font-size:12px;font-weight:700;background:rgba(10,20,14,.85);
-  padding:3px 10px;border-radius:14px;border:1px solid rgba(255,255,255,.15)}
-.mk .lab small{color:#9ca3af;font-weight:400}
+.mk .lab{position:absolute;left:50%;top:-44px;transform:translateX(-50%);white-space:nowrap;
+  color:#f0fdf4;font-size:22px;font-weight:700;background:rgba(8,16,11,.34);
+  padding:5px 15px;border-radius:18px;border:1px solid rgba(255,255,255,.10);
+  text-shadow:0 1px 6px rgba(0,0,0,.95),0 0 14px rgba(0,0,0,.8)}
+.mk .lab small{color:#c7d2cc;font-weight:400}
 .mk{animation:dropIn .7s cubic-bezier(.2,1.4,.4,1) both}
 @keyframes dropIn{from{opacity:0;transform:translateY(-22px) scale(.6)}to{opacity:1;transform:none}}
 .mk.dim{filter:grayscale(.9) brightness(.65);animation:none}
@@ -138,9 +140,9 @@ html,body{height:100%;overflow:hidden;font-family:'Malgun Gothic','Noto Sans KR'
 .pmk .n{position:absolute;left:50%;top:50%;transform:translate(13px,-30px);background:var(--green);
   color:#04150b;font-size:11px;font-weight:800;min-width:22px;height:22px;border-radius:12px;
   display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid #0b1410;z-index:5}
-.pmk .plab{position:absolute;left:50%;top:62px;transform:translateX(-50%);white-space:nowrap;
-  color:#d1fae5;font-size:11px;background:rgba(10,20,14,.85);padding:2px 9px;border-radius:10px;
-  border:1px solid rgba(255,255,255,.12)}
+.pmk .plab{position:absolute;left:50%;top:64px;transform:translateX(-50%);white-space:nowrap;
+  color:#d1fae5;font-size:17px;background:rgba(8,16,11,.34);padding:4px 13px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.10);text-shadow:0 1px 6px rgba(0,0,0,.95)}
 
 /* ───── 갤러리 라이트박스 ───── */
 #gal{position:absolute;inset:0;z-index:3200;background:rgba(2,6,4,.94);display:none;
@@ -261,8 +263,10 @@ document.getElementById('archCount').textContent = PHOTOS.length;
 /* ═══════════ 지도 ═══════════ */
 const map = L.map('map',{zoomControl:false,attributionControl:true,zoomSnap:.25})
   .setView([38.6,127.2],7);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-  maxZoom:18, attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
+/* @2x 레티나 타일 + 512 타일/줌오프셋 -1 → 지도 지명 글자 2배·선명 */
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',{
+  maxZoom:18, tileSize:512, zoomOffset:-1,
+  attribution:'&copy; OpenStreetMap &copy; CARTO'}).addTo(map);
 const layer = L.layerGroup().addTo(map);
 let anims=[];
 function clearAnims(){anims.forEach(a=>{if(a.raf)cancelAnimationFrame(a.raf);if(a.iv)clearInterval(a.iv);if(a.to)clearTimeout(a.to)});anims=[]}
@@ -658,7 +662,7 @@ function go(i){
       b.onclick=()=>openGallery(GSETS[b.dataset.g]||PHOTOS,0));
   },380)});
   setYear(c.year);tlGo(c.year);
-  map.flyTo(c.view.c,c.view.z,{duration:2.1,easeLinearity:.18});
+  map.flyTo(c.view.c,c.view.z+0.4,{duration:2.1,easeLinearity:.18});
   anims.push({to:setTimeout(()=>c.setup&&c.setup.call(c),600)});
 }
 document.getElementById('prev').onclick=()=>go(cur-1);
